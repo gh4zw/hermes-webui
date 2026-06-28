@@ -33,13 +33,15 @@ def test_pytest_integration_marker_is_registered():
 def test_local_test_runner_uses_supported_venv_before_pytest_collection():
     runner = (ROOT / "scripts" / "test.sh").read_text(encoding="utf-8")
     conftest = (ROOT / "tests" / "conftest.py").read_text(encoding="utf-8")
+    resolve_body = runner.split("resolve_venv_python() {", 1)[1].split("\n}\n\nVENV_PY", 1)[0]
 
     assert "python3.13 python3.12 python3.11 python3" in runner
     assert "requirements-dev.txt" in runner
     assert 'HERMES_WEBUI_TEST_PYTHON' in runner
     assert "resolve_venv_python()" in runner
     assert '"$VENV_DIR/bin/python" "$VENV_DIR/Scripts/python.exe"' in runner
-    assert '[[ -x "$candidate" ]] && printf' in runner
+    assert 'if [[ -x "$candidate" ]]; then' in resolve_body
+    assert 'printf \'%s\\n\' "$candidate"' in resolve_body
     assert "exec \"$PYTHON_BIN\" -m pytest" in runner
     # Destructive-fs guard: never create/clear a virtualenv through a symlinked .venv
     # (`python -m venv --clear` would empty the symlink's target).
